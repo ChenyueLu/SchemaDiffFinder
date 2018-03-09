@@ -1,5 +1,5 @@
 import re
-
+from typeMap import TYPE_MAP
 
 def getTableInfo(commands, sqlType):
     """
@@ -34,7 +34,7 @@ def getTableInfo(commands, sqlType):
                             type = featureType
                             size = None
 
-                        featuresDict[featureName] = {"type": type, "size": size}
+                        featuresDict[featureName] = {"type": type.strip(), "size": size}
 
                 tables[tableName] = featuresDict
 
@@ -50,7 +50,7 @@ def getTableInfo(commands, sqlType):
 
                 for feature in features:
                     featureInfo = feature.split(' ')
-                    featureName = featureInfo[0]
+                    featureName = featureInfo[0].replace("\"", "")
                     featureType = re.sub(r'[A-Z].*', '', ' '.join(featureInfo[1:]))
 
                     if re.match("(.*)\((.*)\)", featureType):
@@ -61,7 +61,7 @@ def getTableInfo(commands, sqlType):
                         type = featureType
                         size = None
 
-                    featuresDict[featureName] = {"type": type, "size": size}
+                    featuresDict[featureName] = {"type": type.strip(), "size": size}
 
                 tables[tableName] = featuresDict
 
@@ -86,22 +86,49 @@ def reportGenerator(mysqlTableDict, psqlTableDict):
     Generate a report on the difference between two sql schemas
     :param mysqlTableDict: dictionary of mysql table
     :param psqlTableDict: dictionary of psql table
-    :return:
+    :return: report dictionary
     """
 
     commonTables = [table for table in mysqlTableDict and psqlTableDict]
     print "Common tables are %s \n" % commonTables
+    report = {}
 
     for table in commonTables:
         print "For table %s..." % table
         mysqlTable = mysqlTableDict[table]
         psqlTable = psqlTableDict[table]
+        mismatch = {}
 
         for feature in mysqlTable:
             if feature in psqlTable:
-                if mysqlTable[feature]["type"] != psqlTable[feature]["type"]:
-                    if mysqlTable[feature]["size"] != psqlTable[feature]["size"]:
-                        print "Feature %s has different schema:" % feature
-                        print "MySql: type: %s, size: %s" % (mysqlTable[feature]["type"], mysqlTable[feature]["size"])
-                        print "PSql: type: %s, size: %s" % (psqlTable[feature]["type"], psqlTable[feature]["size"])
+                match = False
+                mysqlType = mysqlTable[feature]["type"]
+                mysqlSize = mysqlTable[feature]["size"]
+                psqlType = psqlTable[feature]["type"]
+                psqlSize = psqlTable[feature]["size"]
+
+                if mysqlType in TYPE_MAP:
+                    mapInfo = TYPE_MAP[mysqlType]
+                    if(psqlType == mapInfo["type"]):
+                        if(mapInfo["matchsize?"]):
+                            if(mysqlSize == mapInfo["mysqlsize"] and psqlSize == mapInfo["psqlsize"]):
+                                match = True
+                        else:
+                            if(mysqlSize == psqlSize):
+                                match = True
+
+                else:
+                    if mysqlType == psqlType and mysqlSize == psqlSize:
+                        match = True
+
+
+                if(match == False):
+                    print "Feature %s has different schema:" % feature
+                    print "MySql: type: %s, size: %s" % (mysqlTable[feature]["type"], mysqlTable[feature]["size"])
+                    print "PSql: type: %s, size: %s" % (psqlTable[feature]["type"], psqlTable[feature]["size"])
+                    mismatch[feature] = {"MySQL": {"type": mysqlType, "size": mysqlSize}, "PSQL": {"type": psqlType, "size": psqlSize}}
+
+        report[table] = mismatch
+
+    return report
 
