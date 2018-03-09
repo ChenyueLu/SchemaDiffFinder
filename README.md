@@ -10,3 +10,25 @@
 4. Run `main.py`
 
 5. Check the report
+
+## What is in the report?
+Reprot follow the format like this:
+
+```json
+{
+  "TableName":
+  {
+    "Feature Name That Has Different Schema":
+    {
+      "PSQL":{"type":"Sometype", "size":"Size"},
+      "MySQL":{"type":"Sometype", "size":"Size"}
+    },
+    
+    ...
+    
+  }
+
+}
+
+
+```
