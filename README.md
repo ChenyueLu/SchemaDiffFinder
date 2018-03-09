@@ -22,12 +22,8 @@ Reprot follow the format like this:
     {
       "PSQL":{"type":"Sometype", "size":"Size"},
       "MySQL":{"type":"Sometype", "size":"Size"}
-    },
-    
-    ...
-    
+    }
   }
-
 }
 
 
